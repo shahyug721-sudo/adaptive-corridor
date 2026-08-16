@@ -1,17 +1,17 @@
-// Sanity invariants for the simulation core. Run with `npm test`.
+﻿// Sanity invariants for the simulation core. Run with `npm test`.
 //
 // These are not a proof of realism. They catch the failures that silently
-// poison a traffic model — NaNs, vehicles passing through each other, an
+// poison a traffic model â€” NaNs, vehicles passing through each other, an
 // ambulance that never arrives, a "result" that is really just one lucky seed.
 
-import { World } from '../web/js/sim/world.js';
-import { runScenario, aggregate, welch } from '../web/js/sim/runner.js';
-import { EXP, ROUTE, EMERGENCY_LANE, freeFlowTime } from '../web/js/sim/config.js';
+import { World } from '../js/sim/world.js';
+import { runScenario, aggregate, welch } from '../js/sim/runner.js';
+import { EXP, ROUTE, EMERGENCY_LANE, freeFlowTime } from '../js/sim/config.js';
 
 let failures = 0;
 const check = (name, cond, detail = '') => {
   if (cond) console.log(`  ok   ${name}`);
-  else { failures++; console.log(`  FAIL ${name}${detail ? ' — ' + detail : ''}`); }
+  else { failures++; console.log(`  FAIL ${name}${detail ? ' â€” ' + detail : ''}`); }
 };
 const section = (t) => console.log(`\n${t}`);
 
@@ -76,8 +76,8 @@ section('Adaptive green zone');
     if (w.zone.active) lengths.push(w.zone.length);
   }
   const min = Math.min(...lengths), max = Math.max(...lengths);
-  check('zone length responds to conditions', max - min > 20, `${min.toFixed(0)}–${max.toFixed(0)} m`);
-  check('zone stays within its bounds', min >= 250 - 1e-6 && max <= 1500 + 1e-6, `${min.toFixed(0)}–${max.toFixed(0)} m`);
+  check('zone length responds to conditions', max - min > 20, `${min.toFixed(0)}â€“${max.toFixed(0)} m`);
+  check('zone stays within its bounds', min >= 250 - 1e-6 && max <= 1500 + 1e-6, `${min.toFixed(0)}â€“${max.toFixed(0)} m`);
 
   // The zone reaches 500 m *ahead* of the unit; its total span also covers the
   // 40 m behind, which is why this checks the forward reach rather than length.
@@ -115,3 +115,4 @@ section('Reproducibility and the four arms');
 
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : failures + ' CHECK(S) FAILED'}`);
 process.exit(failures === 0 ? 0 : 1);
+

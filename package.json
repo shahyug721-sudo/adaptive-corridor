@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "adaptive-corridor",
   "version": "0.1.0",
   "description": "Dedicated emergency corridor with an adaptive ITS green zone, simulated on the Samruddhi Mahamarg.",
@@ -7,7 +7,8 @@
   "scripts": {
     "test": "node scripts/selftest.js",
     "experiment": "node scripts/experiment.js",
-    "serve": "python -m http.server 8123 --directory web"
+    "serve": "python -m http.server 8123 --directory ."
   },
   "engines": { "node": ">=18" }
 }
+

@@ -1,1 +1,1 @@
-﻿{"version":"0.0.1","configurations":[{"name":"corridor","runtimeExecutable":"python","runtimeArgs":["-m","http.server","8123","--directory","C:/adaptive-corridor/web"],"port":8123}]}
+﻿{"version":"0.0.1","configurations":[{"name":"corridor","runtimeExecutable":"python","runtimeArgs":["-m","http.server","8123","--directory","C:/adaptive-corridor"],"port":8123}]}
