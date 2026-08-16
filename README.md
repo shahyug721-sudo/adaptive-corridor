@@ -4,6 +4,8 @@ A microscopic traffic simulation of a **dedicated emergency corridor lane** on t
 Mumbai–Nagpur Samruddhi Mahamarg, with an **adaptive ITS green zone** that clears
 the lane ahead of a responding ambulance.
 
+**Live demo → https://shahyug721-sudo.github.io/adaptive-corridor/**
+
 Runs in the browser. No build step, no install.
 
 ```bash
