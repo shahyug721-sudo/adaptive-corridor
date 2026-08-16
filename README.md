@@ -7,10 +7,20 @@ the lane ahead of a responding ambulance.
 Runs in the browser. No build step, no install.
 
 ```bash
-npm run serve     # then open http://localhost:8123
-npm test          # simulation self-test
-npm run experiment # four-arm comparison table
+npm run serve      # 3D expressway view at http://localhost:8123
+npm test           # self-tests for both scenarios
+npm run experiment # expressway: four-arm comparison
+npm run signals    # arterial: signal coordination + emergency layers
 ```
+
+Two scenarios share one engine:
+
+| | Scenario 1 — expressway | Scenario 2 — arterial |
+|---|---|---|
+| Road | Samruddhi Mahamarg, 10 km | Palm Beach Road, 6 junctions |
+| Control action | **spatial** — a moving green zone | **temporal** — signal phases |
+| Corridor | dedicated reserved lane | preemption opens one |
+| 3D view | yes | simulation only, for now |
 
 ---
 
@@ -103,6 +113,73 @@ Read the table honestly, because it does not say what a first guess would:
 Reproduce with `npm run experiment`.
 
 ---
+
+## Scenario 2 — signalised arterial with coordinated adaptive control
+
+Six junctions on Palm Beach Road, Nerul → Vashi. Four control scenarios, three
+emergency layers. `npm run signals` reproduces both tables.
+
+### Do the signals need to talk to each other?
+
+Demand 0.85, five seeds, no ambulance.
+
+| Scenario | Arterial delay (s/veh) | Cross delay (s/veh) | Throughput (PCU/h) | Cycle (s) |
+|---|---|---|---|---|
+| Fixed-time, uncoordinated | 21.7 ± 1.3 | 15.8 ± 0.5 | 2645 | — |
+| Fixed-time, coordinated green wave | 22.7 ± 1.9 | 13.7 ± 1.9 | 2637 | — |
+| Adaptive, each junction alone | 27.7 ± 20.8 | 13.5 ± 2.4 | 2372 | — |
+| Smart coordinated adaptive | 23.6 ± 5.1 | 18.0 ± 2.5 | **2976** | 120 |
+
+Two findings, and the second one is uncomfortable:
+
+- **Making each junction individually adaptive is the worst option.** It has the
+  highest delay *and* the lowest throughput, with a standard deviation of ±20.8 s
+  — five times any other scenario. Each junction optimises its own approach and
+  releases platoons out of step with the next, so the green wave is destroyed.
+  This is the intuitive design and it does not work.
+- **Smart coordination buys throughput, not delay.** It clears 13 % more PCU per
+  hour than any fixed plan, but per-vehicle delay is no better and cross-street
+  delay is worse. It is serving more vehicles, not the same vehicles faster.
+  Whether that is the right trade depends on whether the corridor is capacity-
+  constrained; on this geometry at this demand, a well-cut fixed green wave is
+  competitive and much simpler to operate.
+
+### Does corridor-wide preemption beat acting locally?
+
+Here the answer is unambiguous.
+
+| Signal scenario | Emergency layer | Response (s) | Stops | Cross delay (s/veh) | Preemptions |
+|---|---|---|---|---|---|
+| Coordinated green wave | None — siren only | 154.1 ± 8.1 | 3.6 | 13.7 | 0 |
+| Coordinated green wave | Local preemption | 144.8 ± 5.7 | 3.0 | 12.0 | 6 |
+| Coordinated green wave | **Corridor scheduling** | **132.1 ± 5.4** | **2.6** | **9.7** | 6 |
+| Smart adaptive | None — siren only | 175.0 ± 19.9 | 5.0 | 18.0 | 0 |
+| Smart adaptive | Local preemption | 150.0 ± 8.3 | 4.0 | 16.8 | 6 |
+| Smart adaptive | **Corridor scheduling** | **127.1 ± 10.2** | **2.2** | 14.1 | 6 |
+
+- Corridor scheduling is **14 % faster than siren alone** and **9 % faster than
+  local preemption**, for the same six preemptions.
+- It also **lowers cross-street delay** — 9.7 s versus 12.0 s for local
+  preemption. Acting late and briefly costs the cross street less than acting
+  early at every junction the siren happens to reach.
+- Best combination overall: smart coordination **plus** corridor scheduling, at
+  127.1 s against 175.0 s uncontrolled — a **27 % reduction**.
+
+The mechanism is the scheduling rule. Rather than holding every junction green
+from first detection, each is armed at the latest instant that still works:
+
+```
+t_start(j) = ETA(j) − [ transition(j) + startup_lost + discharge(j) ]
+```
+
+`transition(j)` is predicted from the shared cycle and offset, not measured from
+the current phase — a junction on green now may be mid-cross-green by the time
+the ambulance arrives, and scheduling against "now" is how preemption arrives
+too late to clear a standing queue.
+
+Yellow, all-red and the two-stage pedestrian minimum are enforced by the state
+machine and cannot be shortened by any strategy or preemption request. The
+self-test asserts this.
 
 ## What is modelled
 
