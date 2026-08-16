@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emergency Corridor — Samruddhi Mahamarg</title>
+<meta name="theme-color" content="#05080c">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div id="view"></div>
+
+<div class="topbar">
+  <button id="dispatch" class="primary">⬤ DISPATCH 108</button>
+  <button id="reset">↺ Reset</button>
+  <button id="pause">❚❚ Pause</button>
+  <button id="camBtn">VIEW · CHASE</button>
+  <button data-speed="1">1×</button>
+  <button data-speed="2" class="on">2×</button>
+  <button data-speed="4">4×</button>
+  <button data-speed="8">8×</button>
+  <div class="title">
+    <b>SAMRUDDHI MAHAMARG · EMERGENCY CORRIDOR</b>
+    Shirdi → Sinnar (Pkg 9) · reserved median lane + adaptive ITS green zone
+  </div>
+</div>
+
+<div class="telemetry panel">
+  <div class="big"><span id="speed">0</span><span>km/h</span></div>
+  <div id="status">STANDBY</div>
+  <div class="rows">
+    <div class="row"><span>Elapsed</span><b id="elapsed">—</b></div>
+    <div class="row"><span>vs free-flow</span><b id="penalty">awaiting dispatch</b></div>
+    <div class="row"><span>Chainage</span><b id="chainage">0.00</b></div>
+    <div class="row"><span>To incident</span><b id="remaining">9.35</b> </div>
+    <div class="row"><span>Sim clock</span><b id="clock">00:00</b></div>
+  </div>
+  <div class="rows">
+    <div class="row"><span>In corridor now</span><b id="encroachers" class="val">0</b></div>
+    <div class="row"><span>Violations logged</span><b id="violations">0</b></div>
+    <div class="row"><span>Green zone</span><b id="zoneLen">—</b></div>
+    <div class="row"><span>Clear time needed</span><b id="clearTime">—</b></div>
+    <div class="row"><span>Lane-1 flow</span><b id="laneFlow">—</b></div>
+    <div class="row"><span>Ahead in lane 0</span><b id="inCorridor">0</b></div>
+  </div>
+</div>
+
+<div class="controls panel">
+  <h3>Scenario</h3>
+  <div class="field">
+    <label>Reserved emergency lane</label>
+    <select id="dedicated">
+      <option value="yes" selected>Yes — as proposed</option>
+      <option value="no">No — Samruddhi as built today</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>ITS green zone</label>
+    <select id="zoneMode">
+      <option value="adaptive" selected>Adaptive (this project)</option>
+      <option value="static">Fixed 500 m</option>
+      <option value="none">None</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Traffic demand <span id="demandVal">0.70</span></label>
+    <input id="demand" type="range" min="0.2" max="1.2" step="0.05" value="0.7">
+  </div>
+  <div class="field">
+    <label>Lane indiscipline <span id="encroachVal">16%</span></label>
+    <input id="encroach" type="range" min="0" max="0.6" step="0.02" value="0.16">
+  </div>
+  <div class="field">
+    <label>Gantry compliance <span id="complianceVal">82%</span></label>
+    <input id="compliance" type="range" min="0.2" max="1" step="0.02" value="0.82">
+  </div>
+  <div class="field">
+    <label>Weather</label>
+    <select id="weather">
+      <option value="clear" selected>Clear</option>
+      <option value="rain">Heavy rain</option>
+      <option value="fog">Fog / low visibility</option>
+    </select>
+  </div>
+  <div class="note">
+    Red vehicles are illegally occupying the reserved lane. The green band is the
+    moving zone in which gantries order it cleared — its length is computed from
+    gap-acceptance theory, so it stretches when lane 1 is busy or a truck is in
+    the way.
+  </div>
+</div>
+
+<div class="log panel" id="log"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
