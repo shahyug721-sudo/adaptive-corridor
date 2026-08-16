@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emergency Corridor — Acoustic Signal Preemption</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0f14">
+<link rel="icon" href="icon.png">
+<style>
+  :root { --panel:#11161d; --line:#232b35; --text:#e6edf3; --dim:#8b98a5; --accent:#f59e0b; --danger:#ef4444; --ok:#22c55e; --v2x:#7dd3fc; }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body { margin:0; background:#05070a; color:var(--text); font:14px/1.5 ui-monospace, "SF Mono", Menlo, monospace; overflow:hidden; }
+  a { color:var(--v2x); } a:hover { color:#bae6fd; }
+  #view { position:fixed; inset:0; }
+  #view canvas { display:block; }
+  .hud-top { position:fixed; top:14px; left:14px; z-index:10; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  button { background:rgba(17,22,29,0.92); color:var(--text); border:1px solid var(--line); padding:9px 15px; font:inherit; font-size:13px; cursor:pointer; white-space:nowrap; }
+  button:hover { border-color:var(--dim); }
+  button.primary { background:var(--danger); border-color:var(--danger); color:#fff; font-weight:700; letter-spacing:0.06em; }
+  button.on { border-color:var(--accent); color:var(--accent); }
+  .hud-top .right { position:fixed; top:14px; right:14px; display:flex; gap:8px; }
+  .speedo { position:fixed; left:18px; bottom:18px; z-index:10; background:rgba(17,22,29,0.92); border:1px solid var(--line); padding:10px 18px 14px; max-width:250px; }
+  .speedo b { font-size:34px; font-weight:600; line-height:1; }
+  .speedo span { font-size:11px; color:var(--dim); letter-spacing:0.1em; }
+  .speedo .who { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sigstate { position:fixed; right:18px; bottom:18px; z-index:10; background:rgba(17,22,29,0.92); border:1px solid var(--line); padding:10px 16px; display:flex; align-items:center; gap:10px; width:344px; }
+  .sigstate i { width:14px; height:14px; border-radius:50%; background:#232b35; flex:none; }
+  .sigstate span { font-size:11px; color:var(--dim); letter-spacing:0.08em; }
+  .sigstate .scan { font-size:10.5px; color:var(--dim); white-space:normal; line-height:1.35; }
+  .banner { position:fixed; left:290px; right:380px; bottom:18px; z-index:9; background:rgba(17,22,29,0.92); border:1px solid var(--line); padding:9px 18px; font-size:12.5px; color:var(--dim); text-align:center; }
+  @media (max-width:1100px) { .banner { display:none; } }
+  .banner b { color:var(--text); }
+  .detect { position:fixed; top:24%; left:50%; transform:translate(-50%,-50%) scale(0.94); z-index:20; text-align:center; opacity:0; pointer-events:none; transition:opacity 0.25s, transform 0.25s; }
+  .detect.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .detect .freq { font-size:15px; letter-spacing:0.2em; color:var(--v2x); text-shadow:0 0 14px rgba(125,211,252,0.8); }
+  .detect .big { font-size:44px; font-weight:700; letter-spacing:0.08em; color:var(--ok); text-shadow:0 0 26px rgba(34,197,94,0.9); }
+  .detect .sub { font-size:13px; color:var(--text); }
+</style>
+</head>
+<body>
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" fill="#05070a"/>
+    <circle cx="50" cy="50" r="30" fill="none" stroke="#7dd3fc" stroke-width="2" opacity="0.5"/>
+    <circle cx="50" cy="50" r="20" fill="none" stroke="#22c55e" stroke-width="2" opacity="0.7"/>
+    <rect x="42" y="40" width="16" height="20" rx="2" fill="#ef4444"/>
+    <rect x="45" y="34" width="10" height="8" rx="1" fill="#e6edf3"/>
+    <line x1="50" y1="8" x2="50" y2="24" stroke="#f59e0b" stroke-width="2"/>
+    <line x1="50" y1="76" x2="50" y2="92" stroke="#f59e0b" stroke-width="2"/>
+  </svg>
+</template>
+<div id="view"></div>
+<div class="hud-top">
+  <button id="dispatch" class="primary">⬤ DISPATCH EMS</button>
+  <button id="reset">↺ Reset</button>
+  <button id="camBtn">CAM: CHASE</button>
+  <button data-speed="1" class="on">1×</button>
+  <button data-speed="2">2×</button>
+  <span class="right">
+    <a href="lab.html"><button>3D lab</button></a>
+    <a href="city.html"><button>City map</button></a>
+  </span>
+</div>
+<div class="speedo"><b id="spd">0</b> <span>km/h</span><div><span class="who" id="who">TRAFFIC CAM — waiting at signal</span></div></div>
+<div class="sigstate"><i id="sigdot"></i><div><span id="sigtxt">SIGNAL</span><div class="scan" id="scan">listening · 2.5–3.5 kHz ID band</div></div></div>
+<div class="banner" id="banner"><b>Traffic queued at the signal.</b> Dispatch the unit and ride with it as the corridor opens.</div>
+<div class="detect" id="detect"><div class="freq">△ SIREN ID 2.9 kHz DETECTED</div><div class="big">RED → EV-GREEN</div><div class="sub">cross-street signal drops to red — junction cleared for the emergency unit</div></div>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+<script src="js/sim.js"></script>
+<script type="module" src="js/drive.js"></script>
+</body>
+</html>
