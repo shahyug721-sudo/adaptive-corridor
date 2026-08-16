@@ -5,10 +5,11 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "test": "node scripts/selftest.js",
-    "experiment": "node scripts/experiment.js",
+    "test": "node scripts/selftest.js && node scripts/signals-selftest.js",
+    "experiment": "node scripts/experiment.js",`n    "signals": "node scripts/signals-experiment.js",
     "serve": "python -m http.server 8123 --directory ."
   },
   "engines": { "node": ">=18" }
 }
+
 
