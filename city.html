@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>City Mode — Acoustic Signal Preemption</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<style>
+  :root { --teal:#0e4d4a; --teal2:#0b3d3b; --panel:#1c1e21; --panel2:#2a2d31; --text:#f1f3f4; --dim:#9aa0a6; --go:#34d17b; --red:#ea4335; --cyan:#35c5f0; --line:#33373c; }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body { margin:0; background:#0b0f14; color:var(--text); font:15px/1.4 "Google Sans", Roboto, system-ui, sans-serif; overflow:hidden; }
+  a { color:var(--cyan); } a:hover { color:#7fdcff; }
+  #map { position:fixed; inset:0; background:#0b0f14; }
+  .leaflet-control-zoom { display:none; }
+  /* top banner */
+  .nav-top { position:fixed; top:14px; left:14px; right:76px; max-width:560px; z-index:1000; background:var(--teal); border-radius:16px; padding:12px 14px; display:flex; align-items:center; gap:14px; box-shadow:0 4px 18px rgba(0,0,0,0.5); }
+  .nav-top .arr { font-size:30px; line-height:1; }
+  .nav-top small { display:block; font-size:14px; color:#bcd9d3; }
+  .nav-top b { font-size:26px; font-weight:600; letter-spacing:0.01em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .nav-top .orb { margin-left:auto; width:44px; height:44px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; color:#1a73e8; flex:none; }
+  /* fab stack */
+  .fabs { position:fixed; right:14px; top:50%; transform:translateY(-30%); z-index:1000; display:flex; flex-direction:column; gap:14px; }
+  .fab { width:52px; height:52px; border-radius:50%; border:none; background:rgba(28,30,33,0.92); color:var(--text); font-size:21px; cursor:pointer; box-shadow:0 3px 12px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; }
+  .fab:hover { background:#2a2d31; }
+  .fab.warn { color:#f5b942; }
+  .needle { width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:14px solid #ea4335; position:relative; top:-6px; }
+  .needle::after { content:""; position:absolute; left:-7px; top:14px; border-left:7px solid transparent; border-right:7px solid transparent; border-top:14px solid #e8eaed; }
+  /* re-center */
+  #recenter { position:fixed; left:16px; bottom:108px; z-index:1000; display:none; align-items:center; gap:9px; background:rgba(28,30,33,0.94); color:var(--text); border:none; border-radius:26px; padding:13px 20px; font:600 16px "Google Sans", Roboto, sans-serif; cursor:pointer; box-shadow:0 3px 12px rgba(0,0,0,0.5); }
+  /* bottom bar */
+  .nav-bottom { position:fixed; left:0; right:0; bottom:0; z-index:1000; background:var(--panel); border-radius:18px 18px 0 0; padding:16px 18px 18px; display:flex; align-items:center; gap:16px; box-shadow:0 -4px 18px rgba(0,0,0,0.5); }
+  .nav-bottom .grab { position:absolute; top:6px; left:50%; width:44px; height:4px; margin-left:-22px; border-radius:2px; background:#4a4e54; }
+  .eta { display:flex; flex-direction:column; min-width:0; }
+  .eta b { font-size:30px; font-weight:600; color:var(--go); line-height:1.15; }
+  .eta span { font-size:16px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .nav-bottom .spacer { flex:1; }
+  .round { width:52px; height:52px; border-radius:50%; border:none; background:var(--panel2); color:var(--text); font-size:20px; cursor:pointer; flex:none; }
+  .gobtn { min-width:92px; height:52px; border-radius:26px; border:none; background:var(--red); color:#fff; font:600 18px "Google Sans", Roboto, sans-serif; cursor:pointer; flex:none; }
+  .gobtn.go { background:#1a73e8; }
+  /* sheet */
+  #sheet { position:fixed; top:0; right:0; bottom:0; width:340px; max-width:92vw; z-index:1100; background:rgba(20,22,25,0.97); border-left:1px solid var(--line); padding:16px; overflow-y:auto; display:none; flex-direction:column; gap:16px; font-size:13px; }
+  #sheet.open { display:flex; }
+  #sheet h2 { font-size:11px; letter-spacing:0.14em; color:var(--dim); margin:0 0 8px; text-transform:uppercase; font-family:ui-monospace, Menlo, monospace; }
+  #sheet .close { align-self:flex-end; background:none; border:none; color:var(--dim); font-size:20px; cursor:pointer; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .row label { color:var(--dim); font-size:12px; }
+  .row output { color:#f5b942; }
+  input[type="range"] { width:150px; accent-color:#f5b942; }
+  .modes { display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .modes label { flex:1; text-align:center; padding:8px 4px; font-size:11.5px; cursor:pointer; color:var(--dim); }
+  .modes input { display:none; }
+  .modes label:has(input:checked) { background:var(--panel2); color:var(--text); box-shadow:inset 0 -2px 0 var(--cyan); }
+  .btn { background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 14px; font:inherit; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .btn.on { border-color:#f5b942; color:#f5b942; }
+  .metrics { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .metric { border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:var(--panel); }
+  .metric b { display:block; font-size:16px; }
+  .metric span { font-size:10px; color:var(--dim); letter-spacing:0.08em; text-transform:uppercase; }
+  #scope { width:100%; height:74px; border:1px solid var(--line); border-radius:8px; background:#070a0e; display:block; }
+  .scopecap { font-size:10.5px; color:var(--dim); margin-top:4px; }
+  #log { display:flex; flex-direction:column; gap:4px; font-size:11.5px; max-height:170px; overflow-y:auto; font-family:ui-monospace, Menlo, monospace; }
+  .ev { color:var(--dim); border-left:2px solid var(--line); padding-left:8px; }
+  .ev span { color:#5a6772; margin-right:8px; }
+  .ev.ev { border-color:var(--red); color:var(--text); }
+  .ev.det { border-color:var(--cyan); }
+  .ev.ok { border-color:var(--go); color:var(--go); }
+  #runs { display:flex; flex-direction:column; gap:6px; }
+  .run { display:grid; grid-template-columns:84px 1fr 42px; gap:8px; align-items:center; font-size:11px; font-family:ui-monospace, Menlo, monospace; }
+  .rmode { border:1px solid var(--line); border-radius:4px; text-align:center; padding:1px 2px; font-size:9.5px; }
+  .rmode.acoustic { color:var(--cyan); border-color:var(--cyan); }
+  .rmode.none { color:#f5b942; border-color:#f5b942; }
+  .rbar { height:8px; background:var(--panel2); border-radius:4px; overflow:hidden; }
+  .rbar i { display:block; height:100%; }
+  /* map markers */
+  .sigicon { display:flex; gap:2px; }
+  .sigicon i { width:10px; height:10px; border-radius:50%; border:1.5px solid #0b0f14; box-shadow:0 0 5px rgba(0,0,0,0.9); }
+  .evicon { width:34px; height:16px; background:#f6f8fa; border:1.5px solid #0b0f14; border-radius:4px; position:relative; box-shadow:0 0 12px rgba(53,197,240,0.8); }
+  .evicon::before { content:""; position:absolute; inset:6px 2px auto 2px; height:3px; background:#d93025; }
+  .evicon::after { content:""; position:absolute; top:-5px; left:50%; width:11px; height:4px; margin-left:-6px; border-radius:1px; animation:strobe 0.28s steps(1) infinite; }
+  @keyframes strobe { 0%{background:#ea4335} 50%{background:#4285f4} }
+  .caricon { width:16px; height:8px; border-radius:2px; border:1px solid rgba(0,0,0,0.6); }
+  .leaflet-tooltip { background:rgba(28,30,33,0.95); color:var(--text); border:none; border-radius:8px; font:600 13px "Google Sans", Roboto, sans-serif; box-shadow:0 2px 8px rgba(0,0,0,0.5); }
+  .leaflet-tooltip-right::before { border-right-color:rgba(28,30,33,0.95); }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="nav-top">
+  <div class="arr">↑</div>
+  <div style="min-width:0"><small>toward</small><b id="navToward">6th Ave corridor</b></div>
+  <div class="orb">✦</div>
+</div>
+<div class="fabs">
+  <button class="fab" id="compass" title="North up"><span class="needle"></span></button>
+  <button class="fab" id="audio" title="Siren audio">🔇</button>
+  <button class="fab warn" id="warnBtn" title="Jump to incident">⚠</button>
+  <button class="fab" id="sheetBtn" title="Model controls">⚙</button>
+</div>
+<button id="recenter">▲ Re-center</button>
+<div class="nav-bottom">
+  <div class="grab"></div>
+  <div class="eta"><b id="etaMin">Ready</b><span id="etaSub">6th Ave · W 23rd → W 42nd</span></div>
+  <div class="spacer"></div>
+  <button class="round" id="sheetBtn2" title="Model controls">⚙</button>
+  <button class="gobtn go" id="dispatch">GO</button>
+</div>
+<aside id="sheet">
+  <button class="close" id="sheetClose">✕</button>
+  <div>
+    <h2>Scenario</h2>
+    <div class="modes">
+      <label><input type="radio" name="mode" value="none"><span>NO PREEMPTION</span></label>
+      <label><input type="radio" name="mode" value="acoustic" checked><span>ACOUSTIC PREEMPTION</span></label>
+    </div>
+    <div class="row" style="margin-top:10px"><label>Detection radius</label><output id="radVal">100 m</output></div>
+    <input type="range" id="radius" min="50" max="300" step="10" value="100">
+    <div class="row"><label>Urban noise floor</label><output id="noiseVal">70 dB</output></div>
+    <input type="range" id="noise" min="55" max="85" step="1" value="70">
+    <div class="row" style="margin-top:8px">
+      <label>Sim speed</label>
+      <span style="display:flex;gap:6px">
+        <button class="btn on" data-speed="1">1×</button>
+        <button class="btn" data-speed="2">2×</button>
+        <button class="btn" data-speed="4">4×</button>
+      </span>
+    </div>
+    <div class="row" style="margin-top:8px"><label>Traffic</label><button class="btn" id="reset">↺ Reset</button></div>
+  </div>
+  <div>
+    <h2>Sensor scope — next signal</h2>
+    <canvas id="scope" width="300" height="74"></canvas>
+    <div class="scopecap" id="scopecap">listening… no unit in range</div>
+  </div>
+  <div>
+    <h2>Live telemetry</h2>
+    <div class="metrics">
+      <div class="metric"><b id="mTime">—</b><span>response time</span></div>
+      <div class="metric"><b id="mDist">—</b><span>dist. to incident</span></div>
+      <div class="metric"><b id="mSpl">—</b><span>SPL @ next sensor</span></div>
+      <div class="metric"><b id="mPre">0</b><span>signals preempted</span></div>
+    </div>
+  </div>
+  <div>
+    <h2>Event log</h2>
+    <div id="log"></div>
+  </div>
+  <div>
+    <h2>Run history — A/B</h2>
+    <div id="runs"></div>
+    <div id="verdict" style="font-size:12px;color:var(--go);margin-top:6px"></div>
+  </div>
+  <div style="font-size:12px;color:var(--dim)">
+    Siren carries a unique ID tone (2.5–3.5 kHz). Intersection sensors matched-filter for it; SPL falls 20·log₁₀(r) from 120 dB @ 1 m and must clear the noise floor — that sets the physical detection radius. On detection: corridor green, cross red; repaid after the unit passes.
+    <div style="margin-top:8px"><a href="index.html">← Drive app</a> · <a href="lab.html">3D lab</a></div>
+  </div>
+</aside>
+<script src="js/city.js"></script>
+</body>
+</html>
