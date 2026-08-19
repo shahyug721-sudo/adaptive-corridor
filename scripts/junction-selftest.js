@@ -54,22 +54,33 @@ console.log('\nPhase machine safety');
 console.log('\nEmergency preemption');
 {
   const w = new JunctionWorld({ seed: 5, emergency: 'preempt', evArm: 'W', evAt: 40 });
-  let sawOthersRed = false, grantedAt = null, shortTransition = false;
+  let sawOthersRed = false, grantedAt = null, sawAllRed = false, allRedSpan = 0;
+  let inAllRed = false, span = 0;
   for (let i = 0; i < 20000 && !w.finished; i++) {
     w.step(1 / 25);
+    // Track the all-red that must separate the interrupted green from the
+    // ambulance's green. Asserting a fixed transition *duration* would be
+    // wrong: if the request lands while the running arm is already in yellow,
+    // a correct transition is legitimately shorter than yellow + all-red.
+    // What must always hold is that a full all-red is served in between.
+    if (w.preempt && w.preempt.grantedAt === null) {
+      if (w.state === 'allRed') { inAllRed = true; span += 1 / 25; }
+      else if (inAllRed) { allRedSpan = Math.max(allRedSpan, span); inAllRed = false; span = 0; }
+    }
     if (w.preempt && w.preempt.grantedAt !== null && grantedAt === null) {
       grantedAt = w.preempt.grantedAt;
+      if (inAllRed) allRedSpan = Math.max(allRedSpan, span);
+      sawAllRed = allRedSpan >= SIGNAL.allRed - 0.08;
       // at the moment of grant, W must be green and every other arm red
       const others = ARMS.filter(a => a.id !== 'W').every(a => w.aspect(a.id) === 'red');
       if (w.aspect('W') === 'green' && others) sawOthersRed = true;
-      if (w.stats.transitionTime < SIGNAL.yellow + SIGNAL.allRed - 0.1) shortTransition = true;
     }
   }
   check('the ambulance cleared the junction', w.finished && w.ev.arrivedT !== null);
   check('preemption fired exactly once', w.stats.preemptions === 1, `${w.stats.preemptions}`);
   check('all other arms were red when the ambulance got green', sawOthersRed);
-  check('the transition paid yellow + all-red', !shortTransition,
-    `${w.stats.transitionTime.toFixed(2)} s`);
+  check('a full all-red separated the interrupted green from the ambulance green',
+    sawAllRed, `longest all-red ${allRedSpan.toFixed(2)} s, floor ${SIGNAL.allRed} s`);
   check('normal cycling resumed afterwards', w.preempt === null);
   console.log(`       transition ${w.stats.transitionTime.toFixed(1)} s, ambulance through in ${(w.ev.arrivedT - w.ev.dispatchT).toFixed(1)} s`);
 }

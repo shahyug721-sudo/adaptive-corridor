@@ -49,6 +49,15 @@ button:disabled { opacity: 0.4; cursor: default; }
 button.primary { background: var(--ev); border-color: var(--ev); color: #fff; font-weight: 700; letter-spacing: 0.06em; }
 button.on { border-color: var(--accent); color: var(--accent); }
 
+/* scenario switcher */
+.nav { display: inline-flex; gap: 6px; margin-left: 6px; }
+.nav a, .nav span.here {
+  font-size: 11px; padding: 8px 12px; border-radius: 3px; text-decoration: none;
+  border: 1px solid var(--line); background: var(--panel); color: var(--dim);
+}
+.nav span.here { color: var(--accent); border-color: var(--accent); }
+.nav a:hover { color: var(--text); border-color: var(--dim); }
+
 .title { margin-left: auto; text-align: right; font-size: 11px; color: var(--dim); line-height: 1.35; }
 .title b { display: block; color: var(--text); font-size: 13px; letter-spacing: 0.04em; }
 
