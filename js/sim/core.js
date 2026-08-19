@@ -101,7 +101,12 @@ export class Metrics {
   }
 
   depart(veh, t) {
-    const travelled = Math.abs(veh.x - veh.enterPos);
+    // Straight-line displacement is the right distance on a corridor, but not
+    // at a junction, where a vehicle enters on one arm and leaves by another.
+    // Anything that accumulates its own path length reports it as `travelled`.
+    const travelled = Number.isFinite(veh.travelled)
+      ? veh.travelled
+      : Math.abs(veh.x - veh.enterPos);
     const free = travelled / Math.max(veh.v0, 1);
     this.mainlineDelay.add(Math.max(0, (t - veh.enterT) - free));
     this.throughput++;

@@ -6,9 +6,10 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "test": "node scripts/selftest.js && node scripts/signals-selftest.js",
+    "test": "node scripts/selftest.js && node scripts/signals-selftest.js && node scripts/junction-selftest.js",
     "experiment": "node scripts/experiment.js",
     "signals": "node scripts/signals-experiment.js",
+    "junction": "node scripts/junction-experiment.js",
     "serve": "python -m http.server 8123 --directory ."
   }
 }
