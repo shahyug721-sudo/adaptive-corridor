@@ -21,10 +21,13 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.maxPolarAngle = Math.PI * 0.48;
-controls.minDistance = 30;
-controls.maxDistance = 420;
+controls.minDistance = 22;
+controls.maxDistance = 320;
 controls.target.set(0, 0, 0);
-camera.position.set(95, 78, 105);
+// Framed on the junction itself rather than the whole 190 m of each arm — the
+// signal heads, the stop lines and the ambulance's path through the box are
+// what this scenario is about, and none of them read from far out.
+camera.position.set(52, 40, 58);
 
 sun.position.set(-120, 190, 110);
 sun.target.position.set(0, 0, 0);
@@ -37,7 +40,9 @@ const fleet = new JunctionFleet(scene);
 const ambulance = buildJunctionAmbulance(scene);
 
 let world = new JunctionWorld(readConfig());
+// exposed for debugging from the console: inspect state or the scene graph
 window.__world = world;
+window.__scene = scene;
 
 /* ---------------- controls ---------------- */
 

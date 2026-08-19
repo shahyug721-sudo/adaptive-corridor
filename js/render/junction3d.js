@@ -37,7 +37,10 @@ export function buildJunctionScene(scene) {
   ground.receiveShadow = true;
   g.add(ground);
 
-  // junction box
+  // The junction box is the square where the two carriageways cross, so it is
+  // one road-width across — not boxHalf, which is the simulation's stop-line
+  // setback and is larger. Sizing it from boxHalf left a bare strip of ground
+  // between the box and the start of each arm.
   const box = new THREE.Mesh(new THREE.BoxGeometry(ROAD_HALF * 2, 0.25, ROAD_HALF * 2), MAT.asphalt);
   box.position.y = 0.12;
   box.receiveShadow = true;
@@ -47,13 +50,19 @@ export function buildJunctionScene(scene) {
 
   for (const arm of ARMS) {
     const p = perp(arm);
-    const len = ARM_LEN - HALF + 30;
-    const midS = HALF + len / 2;
+    // start each arm at the edge of the box so the surfaces meet
+    const len = ARM_LEN - ROAD_HALF + 40;
+    const midS = ROAD_HALF + len / 2;
 
-    // carriageway
+    // Carriageway. A BoxGeometry's long axis is +X, and rotation.y = t sends +X
+    // to (cos t, 0, -sin t); the arm points along (dx, dy) in the XZ plane, so
+    // t = atan2(-dy, dx). An earlier version added a further pi/2 for the N and
+    // S arms, which laid those two roads across the wrong axis entirely and put
+    // their traffic on the grass.
+    const heading = Math.atan2(-arm.dy, arm.dx);
     const road = new THREE.Mesh(new THREE.BoxGeometry(len, 0.25, ROAD_HALF * 2), MAT.asphalt);
     road.position.set(arm.dx * midS, 0.12, arm.dy * midS);
-    road.rotation.y = Math.atan2(-arm.dy, arm.dx) + (arm.dx === 0 ? Math.PI / 2 : 0);
+    road.rotation.y = heading;
     road.receiveShadow = true;
     g.add(road);
 
@@ -73,10 +82,13 @@ export function buildJunctionScene(scene) {
     stop.rotation.y = Math.atan2(arm.dy, arm.dx);
     g.add(stop);
 
-    // zebra crossing just upstream of the stop line
-    for (let i = 0; i < 7; i++) {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.02, 0.45), MAT.paint);
-      const bp = armPosition(arm, HALF + 3.5, 0, (i - 3) * 0.85 + JUNCTION.laneWidth);
+    // Zebra crossing between the box and the stop line. The stripes run along
+    // the direction of travel and are centred on the approach lanes.
+    const lanesWide = JUNCTION.laneWidth * JUNCTION.lanes;
+    for (let i = 0; i < 8; i++) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.02, 0.42), MAT.paint);
+      const off = (i - 3.5) * (lanesWide / 8);
+      const bp = armPosition(arm, ROAD_HALF + 2.6, (JUNCTION.lanes - 1) / 2, off);
       bar.position.set(bp.x, 0.26, bp.y);
       bar.rotation.y = Math.atan2(arm.dy, arm.dx);
       g.add(bar);
@@ -122,7 +134,7 @@ export function buildJunctionScene(scene) {
 
     // kerbs and footpath edges
     for (const side of [-1, 1]) {
-      const kerb = new THREE.Mesh(new THREE.BoxGeometry(len, 0.36, 0.4), MAT.kerb);
+      const kerb = new THREE.Mesh(new THREE.BoxGeometry(len - 2, 0.36, 0.4), MAT.kerb);
       kerb.position.set(
         arm.dx * midS + p.x * side * ROAD_HALF,
         0.18,
