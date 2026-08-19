@@ -15,14 +15,19 @@ npm run experiment # expressway: four-arm comparison
 npm run signals    # arterial: signal coordination + emergency layers
 ```
 
-Two scenarios share one engine:
+Three scenarios share one engine:
 
-| | Scenario 1 — expressway | Scenario 2 — arterial |
-|---|---|---|
-| Road | Samruddhi Mahamarg, 10 km | Palm Beach Road, 6 junctions |
-| Control action | **spatial** — a moving green zone | **temporal** — signal phases |
-| Corridor | dedicated reserved lane | preemption opens one |
-| 3D view | yes | simulation only, for now |
+| | 1 — expressway | 2 — arterial | 3 — junction |
+|---|---|---|---|
+| Road | Samruddhi Mahamarg, 10 km | Palm Beach Rd, 6 junctions | Sector 24, 4 arms |
+| Control action | **spatial** — moving green zone | **temporal** — coordinated phases | **temporal** — phase preemption |
+| Corridor | dedicated reserved lane | preemption opens one | preemption opens one |
+| Sensing | gantry cameras | approach cameras | IR beams (+ camera) |
+| 3D view | yes | simulation only | yes |
+
+```bash
+npm run junction   # junction: strategies + preemption
+```
 
 ---
 
@@ -115,6 +120,79 @@ Read the table honestly, because it does not say what a first guess would:
 Reproduce with `npm run experiment`.
 
 ---
+
+## Scenario 3 — four-arm junction with emergency preemption
+
+**Live → [junction.html](https://shahyug721-sudo.github.io/adaptive-corridor/junction.html)** · reproduce with `npm run junction`
+
+One signalised junction, four arms, one signal per arm. When an ambulance is
+detected on an approach, every other arm goes red, that arm goes green, the unit
+passes, and normal cycling resumes.
+
+This scenario integrates the **BE Academic Final Project** (Raspberry Pi, four
+IR sensors, Firebase). That project's README promises "finally providing a way
+to the ambulance" — but `traffic.py` only senses and uploads; it never drives a
+light and contains no ambulance logic at all. The topology and the IR sensing
+concept are taken from it; the control half is built here.
+
+### The IR sensor is modelled with its real failure mode
+
+A single infrared beam per approach reports *interruptions*, which is a
+different quantity from demand in three ways:
+
+- a motorcycle and a 12 m bus are both **one** interruption, so the count
+  carries no PCU information;
+- two vehicles abreast break the same beam once, and Indian traffic is not lane
+  disciplined;
+- **a queue standing over the beam holds it broken and stops producing counts
+  entirely** — the sensor goes blind exactly when the approach is most congested.
+
+Measured undercount against ground truth: **23–30 %**, worst under congestion.
+
+### Control strategies (demand 0.85, 8 seeds, no ambulance)
+
+| Strategy | Mean delay (s/veh) | Throughput (veh) | IR undercount |
+|---|---|---|---|
+| Fixed equal green | 38.3 ± 3.2 | 304 | 24 % |
+| IR density tiers (BE project design) | **51.3 ± 7.9** | 279 | 30 % |
+| Smart queue clearance | **33.8 ± 6.2** | 295 | 23 % |
+
+The finding that matters: **the tier design is worse than not adapting at all.**
+Three coarse tiers driven by a sensor that undercounts by 30 % allocate green
+badly enough to lose 13 s per vehicle against a plain fixed plan. Adaptive
+control is not automatically better than fixed — it is only better than fixed if
+the measurement underneath it is good enough, and a beam-break counter is not.
+
+### Emergency preemption
+
+| Strategy | Emergency layer | Ambulance (s) | Stops | Transition (s) | Other arms (s/veh) |
+|---|---|---|---|---|---|
+| Fixed equal green | None | 95.4 ± 1.9 | 1.0 | — | 31.8 |
+| Fixed equal green | **Preemption** | **38.7 ± 0.3** | 0.0 | 5.0 | 32.6 |
+| IR density tiers | None | 116.7 ± 6.2 | 1.0 | — | 41.2 |
+| IR density tiers | **Preemption** | **36.4 ± 3.2** | 0.0 | 4.6 | 37.1 |
+| Smart queue clearance | None | 62.0 ± 26.2 | 0.6 | — | 22.6 |
+| Smart queue clearance | **Preemption** | **32.3 ± 5.3** | 0.0 | 1.7 | 22.1 |
+
+- Preemption cuts the ambulance's time at the junction by **48–69 %** and takes
+  its stops to zero in every arm.
+- **It costs the other approaches almost nothing** — 31.8 → 32.6, 41.2 → 37.1,
+  22.6 → 22.1 s per vehicle. At a single junction one preemption is a small
+  perturbation, unlike a corridor where six of them compound.
+- Best combination: smart queue clearance **plus** preemption — 32.3 s for the
+  ambulance and the lowest delay for everyone else.
+
+### The transition is not instant, and must not be
+
+A traced run: at t=7.9 s the ambulance is detected while the east arm is in
+yellow; at t=10.7 s the west arm goes green with all three others red; at
+t=37 s the unit is clear and the south arm takes over.
+
+Transition times vary (1.7–6.5 s) because they depend on where in its phase the
+running arm was when the request arrived. What is invariant — and what the
+self-test asserts — is that **a full all-red separates the interrupted green
+from the ambulance's green**. Asserting a fixed duration instead would be wrong,
+and would fail spuriously whenever a request lands mid-yellow.
 
 ## Scenario 2 — signalised arterial with coordinated adaptive control
 
