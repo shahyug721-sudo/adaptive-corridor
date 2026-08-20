@@ -1,0 +1,16 @@
+sid,kind,density,direction,phase,ev_speed,queue,priority,loading,demand_vph,ev_speed_ms,audio_clip,note
+K01,corridor,very_low,S2N,ev_green,low,short,ambulance,balanced,180,8.0,siren_heldout,three signalised junctions; measures downstream effect
+K02,corridor,very_low,S2N,ev_red,medium,medium,ambulance,heavy_ev,180,13.0,siren_heldout,three signalised junctions; measures downstream effect
+K03,corridor,very_low,S2N,conflicting_green,high,long,ambulance,heavy_conflicting,180,18.0,siren_heldout,three signalised junctions; measures downstream effect
+K04,corridor,low,S2N,ev_green,low,short,ambulance,heavy_all,360,8.0,siren_heldout,three signalised junctions; measures downstream effect
+K05,corridor,low,S2N,ev_red,medium,medium,ambulance,balanced,360,13.0,siren_heldout,three signalised junctions; measures downstream effect
+K06,corridor,low,S2N,conflicting_green,high,long,ambulance,heavy_ev,360,18.0,siren_heldout,three signalised junctions; measures downstream effect
+K07,corridor,medium,S2N,ev_green,low,short,ambulance,heavy_conflicting,620,8.0,siren_heldout,three signalised junctions; measures downstream effect
+K08,corridor,medium,S2N,ev_red,medium,medium,ambulance,heavy_all,620,13.0,siren_heldout,three signalised junctions; measures downstream effect
+K09,corridor,medium,S2N,conflicting_green,high,long,ambulance,balanced,620,18.0,siren_heldout,three signalised junctions; measures downstream effect
+K10,corridor,high,S2N,ev_green,low,short,ambulance,heavy_ev,900,8.0,siren_heldout,three signalised junctions; measures downstream effect
+K11,corridor,high,S2N,ev_red,medium,medium,ambulance,heavy_conflicting,900,13.0,siren_heldout,three signalised junctions; measures downstream effect
+K12,corridor,high,S2N,conflicting_green,high,long,ambulance,heavy_all,900,18.0,siren_heldout,three signalised junctions; measures downstream effect
+K13,corridor,very_high,S2N,ev_green,low,short,ambulance,balanced,1200,8.0,siren_heldout,three signalised junctions; measures downstream effect
+K14,corridor,very_high,S2N,ev_red,medium,medium,ambulance,heavy_ev,1200,13.0,siren_heldout,three signalised junctions; measures downstream effect
+K15,corridor,very_high,S2N,conflicting_green,high,long,ambulance,heavy_conflicting,1200,18.0,siren_heldout,three signalised junctions; measures downstream effect

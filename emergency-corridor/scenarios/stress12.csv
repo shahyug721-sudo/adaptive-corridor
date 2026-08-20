@@ -1,0 +1,13 @@
+sid,kind,density,direction,phase,ev_speed,queue,priority,loading,demand_vph,ev_speed_ms,audio_clip,note
+S01,stress,high,N2S,ev_green,medium,long,ambulance,heavy_conflicting,900,13.0,siren_heldout,"two_ev_conflicting: Two EVs, N and E simultaneously — arbitration must be a model output"
+S02,stress,very_high,S2N,ev_red,medium,long,ambulance,heavy_conflicting,1200,13.0,siren_heldout,"two_ev_same_approach: Two EVs same approach, 20 s apart — queued requests, no double preemption"
+S03,stress,high,E2W,conflicting_green,medium,long,ambulance,heavy_conflicting,900,13.0,siren_heldout,"two_ev_opposing: Two EVs N->S and S->N — non-conflicting, can both be served?"
+S04,stress,very_high,W2E,ev_green,medium,long,ambulance,heavy_conflicting,1200,13.0,horn_heldout,"false_positive_horn: Car horn from UrbanSound8K — phantom preemption, cost measured"
+S05,stress,high,N2S,ev_red,medium,long,ambulance,heavy_conflicting,900,13.0,music_heldout,false_positive_music: Street music / jackhammer — harder negative
+S06,stress,very_high,S2N,conflicting_green,medium,long,ambulance,heavy_conflicting,1200,13.0,siren_lowconf,"weak_confidence: p(siren) just above threshold — should PREPARE, not PREEMPT"
+S07,stress,high,E2W,ev_green,medium,long,ambulance,heavy_conflicting,900,13.0,siren_heldout,"missed_detection: Siren clip the classifier gets wrong — EV queues, cost measured"
+S08,stress,very_high,W2E,ev_red,medium,long,ambulance,heavy_conflicting,1200,13.0,siren_noisy_0db,noisy_0db: Siren mixed with road noise at 0 dB SNR
+S09,stress,high,N2S,conflicting_green,medium,long,ambulance,heavy_conflicting,900,13.0,siren_heldout,ev_decelerates: EV slows mid-approach — ETA invalidated after trigger
+S10,stress,very_high,S2N,ev_green,medium,long,ambulance,heavy_conflicting,1200,13.0,siren_heldout,ev_accelerates: EV arrives earlier than predicted — trigger was too late
+S11,stress,high,E2W,ev_red,medium,long,ambulance,heavy_conflicting,900,13.0,siren_heldout,downstream_spillback: Severe spillback from downstream — preemption must not worsen it
+S12,stress,very_high,W2E,conflicting_green,medium,long,ambulance,heavy_conflicting,1200,13.0,siren_heldout,cycle_nearly_complete: Cycle almost finished on arrival — transition edge case

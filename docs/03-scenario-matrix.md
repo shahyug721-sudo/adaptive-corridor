@@ -23,21 +23,62 @@ change the *sign* of the result: density governs whether a queue can clear at
 all, direction tests that the controller is not accidentally tuned to one arm,
 and arrival phase governs whether preemption is needed at all.
 
-**Overlay factors — balanced, not confounded.** The remaining factors are
-assigned by index so each level appears 20 times and no overlay aligns with a
-core factor. With scenarios numbered `i = 0..59`:
+**Overlay factors — balanced, not confounded.**
 
-| Factor | Rule | Levels |
-|---|---|---|
-| EV speed | `i mod 3` | low / medium / high |
-| Queue condition | `(i div 3) mod 3` | short / medium / long |
-| EV priority | `(i div 9) mod 3` | ambulance / fire / police |
-| Approach loading | `(i div 5) mod 4` | balanced / heavy-on-EV / heavy-on-conflicting / heavy-all |
+> **Corrected 2026-08-20.** An earlier draft of this document proposed plain
+> index strides — `i mod 3`, `(i div 3) mod 3`, `(i div 9) mod 3`,
+> `(i div 5) mod 4` — and asserted they were safe. **They were not.** The
+> generator's balance check rejected them:
+>
+> - `i mod 3` **is** the phase index, so EV speed came out perfectly confounded
+>   with signal phase — every `ev_green` scenario a slow EV, every
+>   `conflicting_green` a fast one. No analysis could have separated the two.
+> - `(i div 3) mod 3` and `(i div 9) mod 3` do not divide 60 evenly and came out
+>   unbalanced at 21/21/18 and 24/18/18.
+>
+> This is exactly why the check asserts rather than assumes. The corrected
+> scheme is below.
 
-Because 3, 3, 9 and 5 are chosen against the core strides (density stride 12,
-direction stride 3, phase stride 1), no overlay is constant within any core
-level. **This must be asserted in code**, not assumed — a balance check that
-prints the cross-tabulation is part of the generator's test.
+Decompose the scenario index into its core coordinates:
+
+```
+i = n*12 + d*3 + p        p = phase (3), d = direction (4), n = density (5)
+```
+
+Each overlay is a linear combination of **all three** coordinates, so none can
+collapse onto a single core factor:
+
+| Factor | Rule | Levels | Count each |
+|---|---|---|---|
+| EV speed | `(p + d + n) mod 3` | low / medium / high | 20 |
+| Queue condition | `(p + 2d + n) mod 3` | short / medium / long | 20 |
+| EV priority | `(p + d + 2n) mod 3` | ambulance / fire / police | 20 |
+| Approach loading | `(d + n) mod 4` | balanced / heavy-EV / heavy-conflicting / heavy-all | 15 |
+
+For any fixed `(d, n)` the phase `p` runs 0,1,2, so each 3-level overlay takes
+all three values exactly once — 20 occurrences over 60 cells. For loading, each
+`(d, n)` pair occurs three times and `(d + n) mod 4` covers all four levels once
+per density, giving 15 each.
+
+The three 3-level overlays differ from one another by a multiple of `d` or `n`,
+so they are not copies — but they are **not mutually orthogonal** either, which
+is the accepted cost of a fractional design at this size. Every combination is
+populated (9/9 and 12/12 cells) with cell counts ranging 4–10 against an ideal
+of 6.7. The generator prints this cross-tabulation so the residual correlation
+is visible rather than hidden.
+
+**Verified output:**
+
+```
+density    high=12, low=12, medium=12, very_high=12, very_low=12
+direction  E2W=15, N2S=15, S2N=15, W2E=15
+phase      conflicting_green=20, ev_green=20, ev_red=20
+ev_speed   high=20, low=20, medium=20
+queue      long=20, medium=20, short=20
+priority   ambulance=20, fire=20, police=20
+loading    balanced=15, heavy_all=15, heavy_conflicting=15, heavy_ev=15
+Balance check passed: no overlay is confounded with a core factor.
+```
 
 **Seeds.** Each of the 60 runs uses seeds from a *training* pool. Evaluation
 repeats every scenario over a disjoint *test* seed pool (§22).
@@ -45,6 +86,12 @@ repeats every scenario over a disjoint *test* seed pool (§22).
 ---
 
 ## 3.2 The 60 core scenarios
+
+> The table below was generated from the **superseded** stride scheme and is
+> retained only to show the shape of the output. **`scenarios/core60.csv`, emitted
+> by `scenarios/generate.py`, is the source of truth**; its overlay columns
+> differ from this table because the strides were corrected. Regenerate rather
+> than reading values from here.
 
 `D` density · `Dir` EV direction · `Ph` phase on arrival · `V` EV speed ·
 `Q` queue · `Pr` priority · `L` approach loading
