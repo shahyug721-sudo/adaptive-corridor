@@ -7,3 +7,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.log
+
+# generated SUMO artefacts
+emergency-corridor/sumo/nets/**/*.net.xml
+emergency-corridor/sumo/nets/**/*.rou.xml
+emergency-corridor/audio/artifacts/
